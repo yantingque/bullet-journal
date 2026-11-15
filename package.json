@@ -1,0 +1,9 @@
+{
+  "name": "personal-bullet-journal",
+  "version": "1.0.13",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "scripts": { "start": "node server.mjs", "test": "node --test tests/journal.test.mjs" },
+  "optionalDependencies": { "web-push": "3.6.7" }
+}

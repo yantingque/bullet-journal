@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f5ef">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="icon" href="/icon-192.png">
+  <link rel="stylesheet" href="/style.css">
+  <title>子彈筆記</title>
+  <script type="module" src="/app.mjs"></script>
+</head>
+<body>
+  <div class="shell">
+    <aside>
+      <div class="brand-row">
+        <a class="brand" href="#today"><img src="/icon-192.png" alt="">子彈筆記</a>
+        <output id="sync" aria-live="polite"></output>
+      </div>
+      <nav aria-label="筆記頁面">
+        <a href="#today"><span aria-hidden="true">◉</span> 今天</a>
+        <a href="#inbox"><span aria-hidden="true">▤</span> 捕捉箱</a>
+        <a href="#projects"><span aria-hidden="true">⌘</span> 專案</a>
+        <a href="#week"><span aria-hidden="true">▦</span> 本週</a>
+        <button id="nav-more" class="quiet" type="button" aria-expanded="false" aria-controls="nav-extra">更多 <span aria-hidden="true">▾</span></button>
+        <div id="nav-extra">
+          <a href="#future"><span aria-hidden="true">◫</span> 未來誌</a>
+          <a href="#alerts"><span aria-hidden="true">◷</span> 提醒</a>
+          <a href="#routines"><span aria-hidden="true">↻</span> 日常</a>
+          <a href="#notes"><span aria-hidden="true">✎</span> 日誌與筆記</a>
+          <a href="#meetings"><span aria-hidden="true">▣</span> 會議紀錄</a>
+          <a href="#health"><span aria-hidden="true">♡</span> 健康</a>
+          <button id="guide-open" class="quiet" type="button" aria-haspopup="dialog" hidden><span aria-hidden="true">?</span> 教學</button>
+        </div>
+      </nav>
+      <button id="compact" class="quiet" type="button">桌面小視窗</button>
+    </aside>
+    <main>
+      <section id="login" class="login" hidden>
+        <h1>配對這台裝置</h1>
+        <p>輸入啟動子彈筆記時顯示的密碼。手機和電腦使用同一組密碼。</p>
+        <form id="login-form">
+          <label>配對密碼<input name="code" type="password" required autocomplete="current-password"></label>
+          <button class="primary">配對</button>
+        </form>
+        <p id="login-error" role="alert"></p>
+      </section>
+      <section id="journal" hidden>
+        <header class="pagehead">
+          <div><p id="date-label" class="eyeline"></p><h1 id="page-title"></h1></div>
+          <button id="add" class="primary" type="button">＋ 快速記錄</button>
+        </header>
+        <div id="view"></div>
+        <p id="message" role="status"></p>
+        <button id="voice-add" type="button" aria-label="語音新增" title="語音新增" hidden>
+          <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-3 0h6"/>
+          </svg>
+        </button>
+      </section>
+      <footer class="install-footer">
+        <button id="install" class="quiet" type="button" hidden>安裝 App</button>
+      </footer>
+    </main>
+  </div>
+  <dialog id="guide" aria-labelledby="guide-title" aria-describedby="guide-text">
+    <header class="dialog-head">
+      <p id="guide-progress" class="muted"></p>
+      <button id="guide-close" class="quiet" type="button" aria-label="關閉教學">✕</button>
+    </header>
+    <section class="guide-message">
+      <h2 id="guide-title" tabindex="-1"></h2>
+      <p id="guide-text"></p>
+    </section>
+    <footer class="dialog-actions">
+      <button id="guide-back" class="quiet" type="button">上一步</button>
+      <a id="guide-try" class="quiet" href="#today">前往今天</a>
+      <button id="guide-next" class="primary" type="button">下一步</button>
+    </footer>
+  </dialog>
+  <dialog id="health-editor" aria-labelledby="health-title">
+    <form id="health-form">
+      <header class="dialog-head"><h2 id="health-title">量測紀錄</h2><button id="health-close" class="quiet" type="button" aria-label="關閉">✕</button></header>
+      <label>量測日期<input name="day" type="date" required></label>
+      <div id="health-photo">
+        <label>體脂機截圖<input name="photo" type="file" accept="image/*"></label>
+        <button class="quiet" id="health-read" type="button">用本地 AI 辨識照片</button>
+      </div>
+      <div class="fields" id="health-values"></div>
+      <p id="health-feedback" role="status"></p>
+      <footer class="dialog-actions">
+        <button id="health-delete" class="quiet danger" type="button" hidden>刪除紀錄</button>
+        <button class="primary" type="submit">儲存紀錄</button>
+      </footer>
+    </form>
+  </dialog>
+  <dialog id="recurring-editor" aria-labelledby="recurring-title">
+    <form id="recurring-form">
+      <header class="dialog-head">
+        <h2 id="recurring-title"></h2>
+        <button class="quiet" type="button" id="recurring-close" aria-label="關閉">✕</button>
+      </header>
+      <label>名稱<input name="title" maxlength="160" required></label>
+      <label data-routine>重複頻率<select name="frequency">
+        <option value="daily">每天</option><option value="weekly">每週固定日</option><option value="monthly">每月</option><option value="quota">每週自選時間</option>
+      </select></label>
+      <div id="routine-target" class="fields" hidden>
+        <label>每週目標次數<input name="target" type="number" min="1" max="99" step="1" value="4"></label>
+        <label>計算方式<select name="targetUnit"><option value="times">次</option><option value="days">天（同一天算一次）</option></select></label>
+      </div>
+      <fieldset id="recurring-weekdays" hidden>
+        <legend>星期</legend>
+        <div class="weekday-options"></div>
+      </fieldset>
+      <label id="recurring-monthdays" hidden>每月日期<input name="monthdays" placeholder="例如 1、15、28" maxlength="110" aria-describedby="monthdays-hint"></label>
+      <p id="monthdays-hint" class="muted" hidden>填 1 到 31。該月沒有選定日期時，會跳過該次。</p>
+      <label data-routine id="routine-times">提醒時段<input name="times" placeholder="例如 08:00、20:00" maxlength="160" aria-describedby="recurring-time-hint"></label>
+      <p id="recurring-time-hint" class="muted" data-routine>使用 24 小時制，可填 0800、2000 或 08:00、20:00。時間以台北為準。</p>
+      <div class="fields" data-birthday hidden>
+        <label>生日月份<select name="birthdayMonth"></select></label>
+        <label>生日日期<select name="birthdayDay"></select></label>
+        <label>幾天前提醒<select name="lead">
+          <option value="0">當天</option><option value="1">前 1 天</option><option value="3">前 3 天</option><option value="7">前 7 天</option>
+        </select></label>
+        <label>提醒時間<input name="birthdayTime" type="time"></label>
+      </div>
+      <label class="check"><input name="paused" type="checkbox">暫停排程</label>
+      <p id="recurring-error" role="alert"></p>
+      <footer class="dialog-actions">
+        <button class="quiet danger" type="button" id="delete-rule" hidden>刪除</button>
+        <button class="primary">儲存排程</button>
+      </footer>
+    </form>
+  </dialog>
+  <dialog id="batch-editor" aria-labelledby="batch-title">
+    <form id="batch-form">
+      <header class="dialog-head">
+        <h2 id="batch-title">批次新增任務</h2>
+        <button class="quiet" type="button" id="batch-close" aria-label="關閉">✕</button>
+      </header>
+      <label>任務清單<textarea name="tasks" rows="6" maxlength="9000" placeholder="買筆記本&#10;寄出報價&#10;整理開會資料" aria-describedby="batch-hint" required></textarea></label>
+      <p id="batch-hint" class="muted">一行一筆。可貼上清單，或用語音輸入後分行。</p>
+      <div class="voice-input" id="batch-voice" hidden>
+        <button class="quiet" type="button">語音輸入</button>
+        <small role="status"></small>
+      </div>
+      <section id="batch-preview" hidden>
+        <h3 id="batch-count"></h3>
+        <details id="batch-project" hidden>
+          <summary></summary>
+          <label>專案名稱<input id="batch-project-name" maxlength="160"></label>
+        </details>
+        <ol id="batch-list"></ol>
+      </section>
+      <p id="batch-error" role="alert"></p>
+      <footer class="dialog-actions">
+        <button class="quiet" type="button" id="batch-ai" hidden>AI 拆分</button>
+        <button class="quiet" type="button" id="batch-review">預覽清單</button>
+        <button class="primary" type="submit" id="batch-save" disabled>全部儲存</button>
+      </footer>
+    </form>
+  </dialog>
+  <dialog id="meeting-editor" aria-labelledby="meeting-title">
+    <form id="meeting-form">
+      <header class="dialog-head"><h2 id="meeting-title">會議紀錄</h2><button type="button" class="quiet" id="meeting-close" aria-label="關閉">✕</button></header>
+      <label>紀錄類別<select name="meetingKind"></select></label>
+      <label>名稱<input name="title" maxlength="160" required></label>
+      <label>日期<input name="date" type="date" required></label>
+      <details id="meeting-overview" open hidden>
+        <summary>摘要預覽</summary>
+        <div id="meeting-overview-content"></div>
+      </details>
+      <fieldset id="meeting-recording">
+        <legend>會議錄音</legend>
+        <div class="toolbar">
+          <button id="meeting-screen" class="quiet" type="button">錄製線上會議</button>
+          <button id="meeting-mic" class="quiet" type="button">錄製麥克風</button>
+          <button id="meeting-stop" class="quiet" type="button" hidden>停止錄音</button>
+          <span id="meeting-elapsed" hidden></span>
+        </div>
+        <label id="meeting-mix-label"><input id="meeting-mix" type="checkbox" checked> 線上錄音也收錄我的麥克風</label>
+        <p class="muted" id="meeting-capture-help">錄音前請告知與會者。線上會議請選會議分頁，並開啟「分享分頁音訊」。</p>
+        <label>或匯入錄音<input id="meeting-file" type="file" accept="audio/*,video/webm,video/mp4,.webm,.m4a,.ogg,.opus"></label>
+        <div id="meeting-audio" hidden>
+          <audio id="meeting-player" controls preload="metadata"></audio>
+          <p id="meeting-playback-status" class="muted" role="status" hidden></p>
+          <label>轉錄裝置<select id="meeting-device">
+            <option value="auto">自動（30 秒內 CPU，較長優先 GPU）</option>
+            <option value="cuda">GPU</option>
+            <option value="cpu">CPU</option>
+          </select></label>
+          <div class="toolbar">
+            <button id="meeting-transcribe" class="quiet" type="button">轉成逐字稿</button>
+            <button id="meeting-cancel-transcribe" class="quiet" type="button" hidden>取消轉錄</button>
+            <a id="meeting-download" class="quiet" download>下載錄音</a>
+          </div>
+          <p id="meeting-transcription-status" class="muted" role="status"></p>
+          <progress id="meeting-transcription-progress" max="100" aria-label="錄音轉錄進度" hidden></progress>
+          <span id="meeting-transcription-time" class="muted" aria-hidden="true" hidden></span>
+          <small>錄音留在這個視窗。若要保留音檔，請先下載。</small>
+        </div>
+      </fieldset>
+      <label>逐字稿<textarea name="transcript" maxlength="180000" rows="6" placeholder="錄音轉錄後會顯示在這裡，也可以貼上會議字幕或手動輸入。"></textarea></label>
+      <button id="meeting-summarize" class="quiet" type="button">本地 AI 整理</button>
+      <p id="meeting-status" class="muted" role="status"></p>
+      <progress id="meeting-summary-progress" aria-label="AI 整理進度" hidden></progress>
+      <label>整理內容<textarea name="notes" maxlength="12000" rows="7"></textarea></label>
+      <footer class="dialog-actions">
+        <button id="meeting-delete" class="quiet" type="button" hidden>移到垃圾桶</button>
+        <button class="primary" type="submit">儲存會議紀錄</button>
+      </footer>
+    </form>
+  </dialog>
+  <dialog id="voice-editor" aria-labelledby="voice-title">
+    <form id="voice-form">
+      <header class="dialog-head"><h2 id="voice-title">語音新增</h2><button class="quiet" type="button" id="voice-close" aria-label="關閉">✕</button></header>
+      <label>辨識文字<textarea name="transcript" maxlength="9000" rows="4" required placeholder="例如：明天下午三點開會"></textarea></label>
+      <div class="voice-input" id="home-voice"><button class="quiet" type="button">語音輸入</button><small role="status"></small></div>
+      <label>辨識語言<select id="voice-language"><option value="zh-TW">中文（可夾英文術語）</option><option value="en-US">English</option></select></label>
+      <p id="voice-interim" data-voice-interim class="muted"></p>
+      <button id="voice-insert-datasheet" class="quiet" type="button">插入 datasheet</button>
+      <details id="voice-glossary">
+        <summary>自訂詞彙</summary>
+        <label>誤聽寫法與正確拼法
+          <textarea id="voice-terms" rows="3" maxlength="2000" placeholder="派森 = Python&#10;吉特哈勃 = GitHub" aria-describedby="voice-terms-help"></textarea>
+        </label>
+        <small id="voice-terms-help">每行一組，用等號隔開。詞彙儲存在這台裝置的瀏覽器。</small>
+      </details>
+      <p id="voice-error" role="alert"></p>
+      <section id="voice-proofread-result" hidden aria-label="語句檢查結果">
+        <p id="voice-proofread-text"></p>
+        <ul id="voice-proofread-issues"></ul>
+      </section>
+      <p id="voice-proofread-status" class="muted" role="status"></p>
+      <footer class="dialog-actions">
+        <button class="quiet" type="button" id="voice-proofread">檢查語句</button>
+        <button class="primary" type="submit">分類並預覽</button>
+      </footer>
+    </form>
+  </dialog>
+  <dialog id="voice-routines" aria-labelledby="voice-routines-title">
+    <form id="voice-routine-form">
+      <header class="dialog-head"><h2 id="voice-routines-title">預覽日常目標</h2><button class="quiet" type="button" id="voice-routines-close" aria-label="關閉">✕</button></header>
+      <div id="voice-routine-list"></div>
+      <p id="voice-routine-error" role="alert"></p>
+      <footer class="dialog-actions"><button class="primary" type="submit">儲存日常</button></footer>
+    </form>
+  </dialog>
+  <dialog id="editor" aria-labelledby="editor-title">
+    <form id="entry-form">
+      <header class="dialog-head"><h2 id="editor-title">快速記錄</h2><button class="quiet" type="button" id="close" aria-label="關閉">✕</button></header>
+      <p id="editor-hint" class="muted" role="status"></p>
+      <details id="voice-source" hidden><summary>查看辨識原文</summary><p id="voice-source-text"></p></details>
+      <details id="voice-corrected" hidden><summary>查看校正後文字</summary><p></p></details>
+      <div id="quick-types" class="quick-options" role="group" aria-label="快速切換" hidden>
+        <button class="quiet" type="button" data-type="C" aria-pressed="false">捕捉</button>
+        <button class="quiet" type="button" data-type="T" aria-pressed="false">任務</button>
+        <button class="quiet" type="button" data-type="E" aria-pressed="false">事件</button>
+      </div>
+      <button class="quiet" id="open-batch" type="button" hidden>批次新增任務</button>
+      <label>項目<input name="title" maxlength="160" required placeholder="想到什麼？"></label>
+      <div class="voice-input" id="entry-voice" hidden>
+        <button class="quiet" type="button">語音輸入</button>
+        <small role="status"></small>
+      </div>
+      <div class="fields">
+        <label id="entry-type-field">分類<select name="type"></select></label>
+        <label id="entry-status-field">狀態<select name="status"></select></label>
+        <label>排程日期<input name="date" type="date" aria-describedby="schedule-hint"></label>
+        <label>排程時間<input name="time" type="time" aria-describedby="schedule-hint"></label>
+        <div id="quick-schedule" class="quick-options" role="group" aria-label="快速排程" hidden>
+          <button class="quiet" type="button" data-offset="0" aria-pressed="false">今天</button>
+          <button class="quiet" type="button" data-offset="1" aria-pressed="false">明天</button>
+        </div>
+        <p id="schedule-hint" class="schedule-hint"></p>
+        <label data-deadline hidden>截止日期<input name="dueDate" type="date" aria-describedby="deadline-hint"></label>
+        <label data-deadline hidden>截止時間<input name="dueTime" type="time" aria-describedby="deadline-hint"></label>
+        <label data-deadline hidden><span id="deadline-reminder-label">截止提醒</span><select name="dueRemind" aria-labelledby="deadline-reminder-label" aria-describedby="deadline-hint"><option value="">關閉</option><option value="0">截止時</option><option value="15">提前 15 分鐘</option><option value="60">提前 1 小時</option><option value="1440">提前 1 天</option></select></label>
+        <p id="deadline-hint" class="schedule-hint" data-deadline hidden>只填截止日期時，以當天結束為準，提醒也從該時點往前算。</p>
+        <label>未排程月份<input name="month" type="month" placeholder="YYYY-MM"></label>
+        <label>優先順序<select name="priority"><option value="">未設定</option><option value="1">1 · 高</option><option value="2">2 · 中</option><option value="3">3 · 低</option></select></label>
+        <label>排程提醒<select name="remind" aria-describedby="schedule-hint"><option value="">關閉</option><option value="0">準時</option><option value="5">提前 5 分鐘</option><option value="15">提前 15 分鐘</option><option value="30">提前 30 分鐘</option><option value="60">提前 1 小時</option></select></label>
+        <label>上級專案<select name="parentId"></select></label>
+      </div>
+      <label>下一步<input name="next" maxlength="300"></label>
+      <label>筆記<textarea name="notes" maxlength="12000" rows="3"></textarea></label>
+      <button class="quiet" type="button" id="polish-notes" hidden>修飾語句</button>
+      <section id="polish-preview" hidden>
+        <label>修飾建議<textarea id="polish-text" maxlength="12000" rows="4"></textarea></label>
+        <div class="polish-actions">
+          <button class="primary" type="button" id="polish-apply" disabled>套用修飾</button>
+          <p id="polish-status" role="status"></p>
+        </div>
+      </section>
+      <button class="quiet" type="button" id="journal-ai" hidden>用本地 AI 回顧</button>
+      <div id="journal-ai-result" class="ai-result muted" role="status" hidden></div>
+      <label class="check"><input name="focus" type="checkbox">設成今日焦點</label>
+      <p id="editor-error" role="alert"></p>
+      <footer class="dialog-actions">
+        <button type="button" class="quiet" id="archive">封存</button>
+        <button type="button" class="quiet danger" id="delete-entry" hidden>刪除</button>
+        <button type="submit" class="primary">儲存</button>
+        <button type="submit" class="quiet quick-continue" id="save-continue" hidden>儲存並繼續</button>
+        <button type="button" class="quiet" id="voice-skip" hidden>略過這筆</button>
+        <button type="button" class="quiet" id="voice-edit-transcript" hidden>修改辨識文字／檢查語句</button>
+      </footer>
+    </form>
+  </dialog>
+</body>
+</html>
